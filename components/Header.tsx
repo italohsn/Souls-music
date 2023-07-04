@@ -5,7 +5,13 @@ import { twMerge } from "tailwind-merge";
 import { RxCaretLeft, RxCaretRight } from "react-icons/rx"
 import { HiHome } from "react-icons/hi";
 import { BiSearch } from "react-icons/bi";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useUser } from "@/hooks/useUser";
+import { FaUserAlt } from "react-icons/fa";
+import { toast } from "react-hot-toast"
+
 import Button from "./Button";
+import useAuthModal from "@/hooks/useAuthModal";
 
 interface HeaderProps {
   children: React.ReactNode;
@@ -16,10 +22,23 @@ const Header: React.FC<HeaderProps> = ({
   children,
   className
 }) => {
+  const authModal = useAuthModal();
   const router = useRouter()
 
-  const handleLogout = () => {
-    // handle Logout in the future
+  const supabaseClient = useSupabaseClient();
+
+  const { user } = useUser();
+
+  const handleLogout = async() => {
+    const { error } = await supabaseClient.auth.signOut();
+    // Redefinir todas as músicas em reprodução
+    router.refresh()
+
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success('Deslogou')
+    }
   }
 
   return (
@@ -114,10 +133,26 @@ const Header: React.FC<HeaderProps> = ({
           gap-x-4
         "
        >
+        {user ? (
+          <div className="flex gap-x-4 items-center">
+            <Button
+              onClick={handleLogout}
+              className="bg-white px-6 py-2"
+            >
+              Sair
+            </Button>
+            <Button
+              onClick={() => router.push('/account')}
+              className="bg-white"
+            >
+              <FaUserAlt />
+            </Button>
+          </div>
+        ) : (
         <>
           <div>
             <Button
-              onClick={() => {}}
+              onClick={authModal.onOpen}
               className="
                 bg-transparent
                 text-neutral-300
@@ -129,7 +164,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <Button
-              onClick={() => {}}
+              onClick={authModal.onOpen}
               className="
                 bg-white
                 px-6
@@ -140,6 +175,7 @@ const Header: React.FC<HeaderProps> = ({
             </Button>
           </div>
         </>
+        )}
         </div>
       </div>
       {children}  
